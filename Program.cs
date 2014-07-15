@@ -20,6 +20,12 @@ namespace AmazingDuinoInterface
 
         static SerialPort arduinoInterface;
 
+        private static void UseDefaultEncoding(out Encoding encode)
+        {
+            encode = Encoding.ASCII;
+            MyConsole.WriteLine("Defaulting encoding to be {0}", Encoding.ASCII.WebName);
+        }
+
         static void Main(string[] args)
         {
             MyConsole.WriteLine("Please input serial port name (leave blank for default):");
@@ -38,15 +44,39 @@ namespace AmazingDuinoInterface
                 MyConsole.WriteLine("Defaulting baud rate to be {0}", baudRate);
             }
 
+            MyConsole.WriteLine("Please input text encoding (leave blank for default):");
+            Encoding encoding = null;
+            String encodingName = MyConsole.ReadLine();
+            if (encodingName != null && encodingName.Trim().Length > 0)
+            {
+                try
+                {
+                    encoding = Encoding.GetEncoding(encodingName);
+                    if (encoding == null)
+                    {
+                        UseDefaultEncoding(out encoding);
+                    }
+                }
+                catch
+                {
+                    UseDefaultEncoding(out encoding);
+                }
+            }
+            else
+            {
+                UseDefaultEncoding(out encoding);
+            }
+
             try
             {
                 arduinoInterface = new SerialPort(intName, baudRate);
+                arduinoInterface.Encoding = encoding;
                 WriteLine(MessageType.SerialLog, "Opening serial port for communication...");
                 arduinoInterface.Open();
             }
             catch (Exception except)
             {
-                WriteLine(MessageType.SerialLog, "Error opening serial port for communication, aborting program:");
+                WriteLine(MessageType.SerialLog, "Error preparing serial port for communication, aborting program:");
                 MyConsole.WriteLine(except.ToString());
                 MyConsole.ReadKey(true);
                 return;
