@@ -33,7 +33,7 @@ namespace AmazingDuinoInterface
             String intName = MyConsole.ReadLine();
             if (intName.Trim().Length == 0)
             {
-                intName = "COM3";
+                intName = "COM4";
                 MyConsole.WriteLine("Defaulting serial port to be {0}", intName);
             }
 
@@ -148,7 +148,7 @@ namespace AmazingDuinoInterface
                     if (isBinary)
                     {
                         byte[] parsedArray = null;
-                        String binaryString = serialCommand.Replace("0x ", "").Replace("0x", "");
+                        String binaryString = serialCommand.Replace(" 0x", "").Replace("0x", "");
                         if (binaryString.Length % 2 != 0)
                         {
                             WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
@@ -173,7 +173,7 @@ namespace AmazingDuinoInterface
 
                         if (parsedArray != null)
                         {
-                            WriteLine(MessageType.SerialLog, String.Format("Writing {0} bytes of binary data to serial port...", parsedArray.Length));
+                            WriteLine(MessageType.SerialLog, String.Format("Writing {0} byte(s) of binary data to serial port...", parsedArray.Length));
                             arduinoInterface.Write(parsedArray, 0, parsedArray.Length);
                         }
                     }
@@ -209,7 +209,7 @@ namespace AmazingDuinoInterface
                             if (receivedData.Length != dispLen)
                             {
                                 Console.Clear();
-                                Console.Write(receivedData.ToString());
+                                Console.Write(receivedData.ToString().Trim());
                                 dispLen = receivedData.Length;
                             }
                         }
@@ -246,7 +246,7 @@ namespace AmazingDuinoInterface
                 {
                     byte[] data = new byte[bytesToRead];
                     arduinoInterface.Read(data, 0, bytesToRead);
-                    receivedData.Append("0x" + BitConverter.ToString(data).Replace("-", " 0x"));
+                    receivedData.Append(" 0x" + BitConverter.ToString(data).Replace("-", " 0x"));
                 }
                 else
                 {
