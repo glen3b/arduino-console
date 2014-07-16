@@ -21,6 +21,8 @@ namespace AmazingDuinoInterface
 
         static SerialPort arduinoInterface;
         static Boolean isBinary;
+        static int initialWidth;
+        static int initialHeight;
 
         private static void UseDefaultEncoding(out Encoding encode)
         {
@@ -30,8 +32,8 @@ namespace AmazingDuinoInterface
 
         static void Main(string[] args)
         {
-            Console.WindowWidth = Math.Min(Console.LargestWindowWidth, (int)(Console.WindowWidth * 1.5));
-            Console.WindowHeight = Math.Min(Console.LargestWindowHeight, (int)(Console.WindowHeight * 1.5));
+            initialWidth = Console.WindowWidth;
+            initialHeight = Console.WindowHeight;
 
             MyConsole.WriteLine("Please input serial port name (leave blank for default):");
             String intName = MyConsole.ReadLine();
@@ -120,9 +122,49 @@ namespace AmazingDuinoInterface
                 ConsoleCommands.Add("hex2byte", HexConversionCommand);
                 ConsoleCommandDescriptions.Add("/hex2byte <hex>", "Converts a hexadecimal byte value to its decimal representation.");
             }
+            Dictionary<String, String> windowManagementCommands = new Dictionary<string, string>();
+            windowManagementCommands["/window enlarge"] = "Enlarge the window to a proportionally larger size than the current size.";
+            windowManagementCommands["/window shrink"] = "Shrink the window to its default size.";
+            windowManagementCommands["/window clear"] = "Clear the console window and its history.";
+            ConsoleCommands.Add("window", () =>
+            {
+                switch (CurrentCommandArguments == null ? null : CurrentCommandArguments.Trim().ToUpperInvariant())
+                {
+                    case "ENLARGE":
+                        Console.WindowWidth = Math.Min(Console.LargestWindowWidth, (int)(Console.WindowWidth * 1.3));
+                        Console.WindowHeight = Math.Min(Console.LargestWindowHeight, (int)(Console.WindowHeight * 1.6));
+                        break;
+                    case "SHRINK":
+                        Console.WindowHeight = initialHeight;
+                        Console.WindowWidth = initialWidth;
+                        Console.BufferWidth = Console.WindowWidth;
+                        Console.BufferHeight = Console.WindowHeight;
+                        break;
+                    case "CLEAR":
+                        MyConsole.Clear();
+                        MyConsole.ForegroundColor = ConsoleColor.Yellow;
+                        MyConsole.WriteLine("Welcome to the serial communication prompt. Type /help for help.");
+                        MyConsole.ForegroundColor = ConsoleColor.Gray;
+                        break;
+                    default:
+                        MyConsole.ForegroundColor = ConsoleColor.Green;
+                        MyConsole.WriteLine("Window management commands:");
+                        foreach (var command in windowManagementCommands)
+                        {
+                            MyConsole.ForegroundColor = ConsoleColor.Magenta;
+                            MyConsole.Write(command.Key);
+                            MyConsole.ForegroundColor = ConsoleColor.Cyan;
+                            MyConsole.Write(" - ");
+                            MyConsole.ForegroundColor = ConsoleColor.DarkYellow;
+                            MyConsole.WriteLine(command.Value);
+                        }
+                        MyConsole.ForegroundColor = ConsoleColor.Gray;
+                        break;
+                }
+            });
+            ConsoleCommandDescriptions.Add("/window <enlarge|shrink|clear>", "Manage the current console window.");
             ConsoleCommands.Add("exit", () => { throw new ProgramMustExitException(); });
             ConsoleCommandDescriptions.Add("/exit", "Exits the program.");
-
 
             arduinoInterface.DataReceived += new SerialDataReceivedEventHandler(arduinoInterface_DataReceived);
 
