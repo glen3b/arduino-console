@@ -13,12 +13,13 @@ namespace AmazingDuinoInterface
             Standard,
             Prompt,
             SerialLog,
-            IncomingMessage
+            Error
         }
 
         class ProgramMustExitException : Exception { }
 
         static SerialPort arduinoInterface;
+        static Boolean isBinary;
 
         private static void UseDefaultEncoding(out Encoding encode)
         {
@@ -51,10 +52,18 @@ namespace AmazingDuinoInterface
             {
                 try
                 {
-                    encoding = Encoding.GetEncoding(encodingName);
-                    if (encoding == null)
+                    if (encodingName.Trim().Equals("binary", StringComparison.OrdinalIgnoreCase))
                     {
-                        UseDefaultEncoding(out encoding);
+                        encoding = null;
+                        isBinary = true;
+                    }
+                    else
+                    {
+                        encoding = Encoding.GetEncoding(encodingName);
+                        if (encoding == null)
+                        {
+                            UseDefaultEncoding(out encoding);
+                        }
                     }
                 }
                 catch
@@ -70,7 +79,7 @@ namespace AmazingDuinoInterface
             try
             {
                 arduinoInterface = new SerialPort(intName, baudRate);
-                arduinoInterface.Encoding = encoding;
+                arduinoInterface.Encoding = encoding == null ? Encoding.ASCII : encoding;
                 WriteLine(MessageType.SerialLog, "Opening serial port for communication...");
                 arduinoInterface.Open();
             }
@@ -136,8 +145,43 @@ namespace AmazingDuinoInterface
                 }
                 else
                 {
-                    WriteLine(MessageType.SerialLog, "Sending message to port...");
-                    arduinoInterface.WriteLine(serialCommand);
+                    if (isBinary)
+                    {
+                        byte[] parsedArray = null;
+                        String binaryString = serialCommand.Replace("0x ", "").Replace("0x", "");
+                        if (binaryString.Length % 2 != 0)
+                        {
+                            WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
+                        }
+                        else
+                        {
+                            parsedArray = new byte[binaryString.Length / 2];
+                            for (int i = 0; i < binaryString.Length; i += 2)
+                            {
+                                try
+                                {
+                                    parsedArray[i / 2] = Convert.ToByte(binaryString.Substring(i, 2));
+                                }
+                                catch
+                                {
+                                    WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
+                                    parsedArray = null;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (parsedArray != null)
+                        {
+                            WriteLine(MessageType.SerialLog, String.Format("Writing {0} bytes of binary data to serial port...", parsedArray.Length));
+                            arduinoInterface.Write(parsedArray, 0, parsedArray.Length);
+                        }
+                    }
+                    else
+                    {
+                        WriteLine(MessageType.SerialLog, "Sending message to port...");
+                        arduinoInterface.WriteLine(serialCommand);
+                    }
                 }
             }
         }
@@ -184,7 +228,7 @@ namespace AmazingDuinoInterface
                 case "AMOUNT":
                     lock (synclock)
                     {
-                        MyConsole.WriteLine("Buffer contains {0} byte(s) of received data.", receivedData.Length);
+                        MyConsole.WriteLine("Buffer contains {0} byte(s) of received data.", isBinary ? receivedData.Length / 5 /* Each byte representation uses 5 characters: "0x<hex hex> " */ : receivedData.Length);
                     }
                     break;
                 default:
@@ -198,9 +242,18 @@ namespace AmazingDuinoInterface
             lock (synclock)
             {
                 int bytesToRead = arduinoInterface.BytesToRead;
-                char[] data = new char[bytesToRead];
-                arduinoInterface.Read(data, 0, bytesToRead);
-                receivedData.Append(data);
+                if (isBinary)
+                {
+                    byte[] data = new byte[bytesToRead];
+                    arduinoInterface.Read(data, 0, bytesToRead);
+                    receivedData.Append("0x" + BitConverter.ToString(data).Replace("-", " 0x"));
+                }
+                else
+                {
+                    char[] data = new char[bytesToRead];
+                    arduinoInterface.Read(data, 0, bytesToRead);
+                    receivedData.Append(data);
+                }
             }
 
             //lock (synclock)
@@ -285,11 +338,11 @@ namespace AmazingDuinoInterface
 
         static void Literal()
         {
-            WriteLine(MessageType.Prompt, "Please input literal message to be sent to serial port.");
+            WriteLine(MessageType.Prompt, "Please input literal message to be sent to serial port. The message will be sent without newline, and will be sent with textual encoding.");
             MyConsole.ForegroundColor = ConsoleColor.Red;
             String input = MyConsole.ReadLine();
             MyConsole.ForegroundColor = ConsoleColor.Gray;
-            WriteLine(MessageType.SerialLog, "Sending literal message to serial port without newline...");
+            WriteLine(MessageType.SerialLog, "Sending literal textual message to serial port without newline...");
             arduinoInterface.Write(input);
         }
 
@@ -307,18 +360,20 @@ namespace AmazingDuinoInterface
                     MyConsole.ForegroundColor = ConsoleColor.DarkGray;
                     MyConsole.Write("[Serial] ");
                     break;
-                case MessageType.IncomingMessage:
-                    if (!DisplayIncomingMessages)
-                    {
-                        return;
-                    }
-
-                    MyConsole.ForegroundColor = ConsoleColor.DarkGray;
-                    MyConsole.Write("[Incoming Message] ");
+                case MessageType.Error:
                     break;
+                //case MessageType.IncomingMessage:
+                //    if (!DisplayIncomingMessages)
+                //    {
+                //        return;
+                //    }
+
+                //    MyConsole.ForegroundColor = ConsoleColor.DarkGray;
+                //    MyConsole.Write("[Incoming Message] ");
+                //    break;
             }
 
-            MyConsole.ForegroundColor = ConsoleColor.Gray;
+            MyConsole.ForegroundColor = type == MessageType.Error ? ConsoleColor.DarkRed : ConsoleColor.Gray;
             MyConsole.WriteLine(message);
             MyConsole.ForegroundColor = ConsoleColor.Red;
         }
