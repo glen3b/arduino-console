@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO.Ports;
+using System.Globalization;
 
 namespace AmazingDuinoInterface
 {
@@ -160,7 +161,7 @@ namespace AmazingDuinoInterface
                             {
                                 try
                                 {
-                                    parsedArray[i / 2] = Convert.ToByte(binaryString.Substring(i, 2));
+                                    parsedArray[i / 2] = byte.Parse(binaryString.Substring(i, 2), NumberStyles.AllowHexSpecifier);
                                 }
                                 catch
                                 {
@@ -246,7 +247,11 @@ namespace AmazingDuinoInterface
                 {
                     byte[] data = new byte[bytesToRead];
                     arduinoInterface.Read(data, 0, bytesToRead);
-                    receivedData.Append(" 0x" + BitConverter.ToString(data).Replace("-", " 0x"));
+                    //+ BitConverter.ToString(data).Replace("-", " 0x"));
+                    foreach (byte datVal in data)
+                    {
+                        receivedData.AppendFormat(" 0x{0:X2}", datVal);
+                    }
                 }
                 else
                 {
