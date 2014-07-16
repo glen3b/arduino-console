@@ -30,6 +30,9 @@ namespace AmazingDuinoInterface
 
         static void Main(string[] args)
         {
+            Console.WindowWidth = Math.Min(Console.LargestWindowWidth, (int)(Console.WindowWidth * 1.5));
+            Console.WindowHeight = Math.Min(Console.LargestWindowHeight, (int)(Console.WindowHeight * 1.5));
+
             MyConsole.WriteLine("Please input serial port name (leave blank for default):");
             String intName = MyConsole.ReadLine();
             if (intName.Trim().Length == 0)
@@ -99,14 +102,26 @@ namespace AmazingDuinoInterface
 
             ConsoleCommands.Add("help", Help);
             ConsoleCommandDescriptions.Add("/help", "Displays information for all available commands.");
-            ConsoleCommands.Add("literal", Literal);
-            ConsoleCommandDescriptions.Add("/literal", "Sends a literal string, no comamnds or newlines, to the serial port.");
-            ConsoleCommands.Add("exit", () => { throw new ProgramMustExitException(); });
-            ConsoleCommandDescriptions.Add("/exit", "Exits the program.");
+            if (!isBinary)
+            {
+                ConsoleCommands.Add("literal", Literal);
+                ConsoleCommandDescriptions.Add("/literal", "Sends a literal string, no comamnds or newlines, to the serial port.");
+            }
             //ConsoleCommands.Add("incomingdisplay", InputMessageToggle);
             //ConsoleCommandDescriptions.Add("/incomingdisplay [state]", "Toggles whether incoming serial port messages are displayed.");
             ConsoleCommands.Add("input", InputConsoleStateManager);
             ConsoleCommandDescriptions.Add("/input <view|clear|amount>", "Display or clear the serial input buffer.");
+            if (isBinary)
+            {
+                ConsoleCommands.Add("byte2hex", ByteConversionCommand);
+                ConsoleCommandDescriptions.Add("/byte2hex <byte>", "Converts a decimal byte value to hexadecimal.");
+                ConsoleCommands.Add("char2hex", CharConversionCommand);
+                ConsoleCommandDescriptions.Add("/char2hex <char>", "Converts a character value to its byte representation.");
+                ConsoleCommands.Add("hex2byte", HexConversionCommand);
+                ConsoleCommandDescriptions.Add("/hex2byte <hex>", "Converts a hexadecimal byte value to its decimal representation.");
+            }
+            ConsoleCommands.Add("exit", () => { throw new ProgramMustExitException(); });
+            ConsoleCommandDescriptions.Add("/exit", "Exits the program.");
 
 
             arduinoInterface.DataReceived += new SerialDataReceivedEventHandler(arduinoInterface_DataReceived);
@@ -193,7 +208,56 @@ namespace AmazingDuinoInterface
 
         static object synclock = new object();
 
+        static void HexConversionCommand()
+        {
+            byte value;
+            try
+            {
+                if (!CurrentCommandArguments.StartsWith("0x") && !CurrentCommandArguments.StartsWith("&h"))
+                {
+                    throw new Exception();
+                }
+                value = byte.Parse(CurrentCommandArguments.Substring(2), NumberStyles.AllowHexSpecifier);
+            }
+            catch
+            {
+                MyConsole.WriteLine("Must specify hexadecimal value to convert.");
+                return;
+            }
 
+            MyConsole.WriteLine("Hexadecimal value {0} represents byte with decimal value {1}.", CurrentCommandArguments, value);
+            char charVal = (char)value;
+            if (char.IsLetterOrDigit(charVal) || char.IsPunctuation(charVal) || char.IsWhiteSpace(charVal))
+            {
+                MyConsole.WriteLine("Hexadecimal value {0} represents character literal '{1}'.", CurrentCommandArguments, charVal);
+            }
+        }
+
+        static void ByteConversionCommand()
+        {
+            byte value;
+
+            if (!byte.TryParse(CurrentCommandArguments, out value))
+            {
+                MyConsole.WriteLine("Must specify decimal byte value to convert.");
+                return;
+            }
+
+            MyConsole.WriteLine("Hexadecimal value of {0} is 0x{0:X2}.", value);
+        }
+
+        static void CharConversionCommand()
+        {
+            char value;
+
+            if (!char.TryParse(CurrentCommandArguments, out value))
+            {
+                MyConsole.WriteLine("Must specify character to convert.");
+                return;
+            }
+
+            MyConsole.WriteLine("Byte decimal value of character literal '{0}' is {1}, or 0x{1:X2} in hexadecimal.", value, (byte)value);
+        }
 
         static void InputConsoleStateManager()
         {
