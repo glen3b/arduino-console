@@ -103,148 +103,151 @@ namespace AmazingDuinoInterface
                 return;
             }
 
-            MyConsole.ForegroundColor = ConsoleColor.DarkMagenta;
-            MyConsole.WriteLine("Serial communication prompt is ready, please press enter to continue.");
-            MyConsole.ReadKey(true);
-            MyConsole.Clear();
+            using (arduinoInterface)
+            {
+                MyConsole.ForegroundColor = ConsoleColor.DarkMagenta;
+                MyConsole.WriteLine("Serial communication prompt is ready, please press enter to continue.");
+                MyConsole.ReadKey(true);
+                MyConsole.Clear();
 
-            ConsoleCommands.Add("help", Help);
-            ConsoleCommandDescriptions.Add("/help", "Displays information for all available commands.");
-            if (!isBinary)
-            {
-                ConsoleCommands.Add("literal", Literal);
-                ConsoleCommandDescriptions.Add("/literal", "Sends a literal string, no comamnds or newlines, to the serial port.");
-            }
-            //ConsoleCommands.Add("incomingdisplay", InputMessageToggle);
-            //ConsoleCommandDescriptions.Add("/incomingdisplay [state]", "Toggles whether incoming serial port messages are displayed.");
-            ConsoleCommands.Add("input", InputConsoleStateManager);
-            ConsoleCommandDescriptions.Add("/input <view|clear|amount>", "Display or clear the serial input buffer.");
-            if (isBinary)
-            {
-                ConsoleCommands.Add("byte2hex", ByteConversionCommand);
-                ConsoleCommandDescriptions.Add("/byte2hex <byte>", "Converts a decimal byte value to hexadecimal.");
-                ConsoleCommands.Add("char2hex", CharConversionCommand);
-                ConsoleCommandDescriptions.Add("/char2hex <char>", "Converts a character value to its byte representation.");
-                ConsoleCommands.Add("hex2byte", HexConversionCommand);
-                ConsoleCommandDescriptions.Add("/hex2byte <hex>", "Converts a hexadecimal byte value to its decimal representation.");
-            }
-            Dictionary<String, String> windowManagementCommands = new Dictionary<string, string>();
-            windowManagementCommands["/window enlarge"] = "Enlarge the window to a proportionally larger size than the current size.";
-            windowManagementCommands["/window shrink"] = "Shrink the window to its default size.";
-            windowManagementCommands["/window clear"] = "Clear the console window and its history.";
-            ConsoleCommands.Add("window", () =>
-            {
-                switch (CurrentCommandArguments == null ? null : CurrentCommandArguments.Trim().ToUpperInvariant())
+                ConsoleCommands.Add("help", Help);
+                ConsoleCommandDescriptions.Add("/help", "Displays information for all available commands.");
+                if (!isBinary)
                 {
-                    case "ENLARGE":
-                        Console.WindowWidth = Math.Min(Console.LargestWindowWidth, (int)(Console.WindowWidth * 1.3));
-                        Console.WindowHeight = Math.Min(Console.LargestWindowHeight, (int)(Console.WindowHeight * 1.6));
-                        break;
-                    case "SHRINK":
-                        Console.WindowHeight = initialHeight;
-                        Console.WindowWidth = initialWidth;
-                        Console.BufferWidth = Console.WindowWidth;
-                        Console.BufferHeight = Console.WindowHeight;
-                        break;
-                    case "CLEAR":
-                        MyConsole.Clear();
-                        MyConsole.ForegroundColor = ConsoleColor.Yellow;
-                        MyConsole.WriteLine("Welcome to the serial communication prompt. Type /help for help.");
-                        MyConsole.ForegroundColor = ConsoleColor.Gray;
-                        break;
-                    default:
-                        MyConsole.ForegroundColor = ConsoleColor.Green;
-                        MyConsole.WriteLine("Window management commands:");
-                        foreach (var command in windowManagementCommands)
-                        {
-                            MyConsole.ForegroundColor = ConsoleColor.Magenta;
-                            MyConsole.Write(command.Key);
-                            MyConsole.ForegroundColor = ConsoleColor.Cyan;
-                            MyConsole.Write(" - ");
-                            MyConsole.ForegroundColor = ConsoleColor.DarkYellow;
-                            MyConsole.WriteLine(command.Value);
-                        }
-                        MyConsole.ForegroundColor = ConsoleColor.Gray;
-                        break;
+                    ConsoleCommands.Add("literal", Literal);
+                    ConsoleCommandDescriptions.Add("/literal", "Sends a literal string, no comamnds or newlines, to the serial port.");
                 }
-            });
-            ConsoleCommandDescriptions.Add("/window <enlarge|shrink|clear>", "Manage the current console window.");
-            ConsoleCommands.Add("exit", () => { throw new ProgramMustExitException(); });
-            ConsoleCommandDescriptions.Add("/exit", "Exits the program.");
+                //ConsoleCommands.Add("incomingdisplay", InputMessageToggle);
+                //ConsoleCommandDescriptions.Add("/incomingdisplay [state]", "Toggles whether incoming serial port messages are displayed.");
+                ConsoleCommands.Add("input", InputConsoleStateManager);
+                ConsoleCommandDescriptions.Add("/input <view|clear|amount>", "Display or clear the serial input buffer.");
+                if (isBinary)
+                {
+                    ConsoleCommands.Add("byte2hex", ByteConversionCommand);
+                    ConsoleCommandDescriptions.Add("/byte2hex <byte>", "Converts a decimal byte value to hexadecimal.");
+                    ConsoleCommands.Add("char2hex", CharConversionCommand);
+                    ConsoleCommandDescriptions.Add("/char2hex <char>", "Converts a character value to its byte representation.");
+                    ConsoleCommands.Add("hex2byte", HexConversionCommand);
+                    ConsoleCommandDescriptions.Add("/hex2byte <hex>", "Converts a hexadecimal value to its decimal representation.");
+                }
+                Dictionary<String, String> windowManagementCommands = new Dictionary<string, string>();
+                windowManagementCommands["/window enlarge"] = "Enlarge the window to a proportionally larger size than the current size.";
+                windowManagementCommands["/window shrink"] = "Shrink the window to its default size.";
+                windowManagementCommands["/window clear"] = "Clear the console window and its history.";
+                ConsoleCommands.Add("window", () =>
+                {
+                    switch (CurrentCommandArguments == null ? null : CurrentCommandArguments.Trim().ToUpperInvariant())
+                    {
+                        case "ENLARGE":
+                            Console.WindowWidth = Math.Min(Console.LargestWindowWidth, (int)(Console.WindowWidth * 1.3));
+                            Console.WindowHeight = Math.Min(Console.LargestWindowHeight, (int)(Console.WindowHeight * 1.6));
+                            break;
+                        case "SHRINK":
+                            Console.WindowHeight = initialHeight;
+                            Console.WindowWidth = initialWidth;
+                            Console.BufferWidth = Console.WindowWidth;
+                            Console.BufferHeight = Console.WindowHeight;
+                            break;
+                        case "CLEAR":
+                            MyConsole.Clear();
+                            MyConsole.ForegroundColor = ConsoleColor.Yellow;
+                            MyConsole.WriteLine("Welcome to the serial communication prompt. Type /help for help.");
+                            MyConsole.ForegroundColor = ConsoleColor.Gray;
+                            break;
+                        default:
+                            MyConsole.ForegroundColor = ConsoleColor.Green;
+                            MyConsole.WriteLine("Window management commands:");
+                            foreach (var command in windowManagementCommands)
+                            {
+                                MyConsole.ForegroundColor = ConsoleColor.Magenta;
+                                MyConsole.Write(command.Key);
+                                MyConsole.ForegroundColor = ConsoleColor.Cyan;
+                                MyConsole.Write(" - ");
+                                MyConsole.ForegroundColor = ConsoleColor.DarkYellow;
+                                MyConsole.WriteLine(command.Value);
+                            }
+                            MyConsole.ForegroundColor = ConsoleColor.Gray;
+                            break;
+                    }
+                });
+                ConsoleCommandDescriptions.Add("/window <enlarge|shrink|clear>", "Manage the current console window.");
+                ConsoleCommands.Add("exit", () => { throw new ProgramMustExitException(); });
+                ConsoleCommandDescriptions.Add("/exit", "Exits the program.");
 
-            arduinoInterface.DataReceived += new SerialDataReceivedEventHandler(arduinoInterface_DataReceived);
+                arduinoInterface.DataReceived += new SerialDataReceivedEventHandler(arduinoInterface_DataReceived);
 
-            MyConsole.ForegroundColor = ConsoleColor.Yellow;
-            MyConsole.WriteLine("Welcome to the serial communication prompt. Type /help for help.");
-            MyConsole.ForegroundColor = ConsoleColor.Gray;
-
-            while (true)
-            {
-                MyConsole.ForegroundColor = ConsoleColor.Red;
-                string serialCommand = MyConsole.ReadLine();
+                MyConsole.ForegroundColor = ConsoleColor.Yellow;
+                MyConsole.WriteLine("Welcome to the serial communication prompt. Type /help for help.");
                 MyConsole.ForegroundColor = ConsoleColor.Gray;
-                if (serialCommand.StartsWith("/"))
-                {
-                    string[] splitStrings = serialCommand.Substring(1).Split(new char[] { ' ' }, 2);
-                    serialCommand = splitStrings[0];
-                    CurrentCommandArguments = splitStrings.Length > 1 ? splitStrings[1] : null;
 
-                    Action cmd;
-                    if (!ConsoleCommands.TryGetValue(serialCommand, out cmd))
-                    {
-                        WriteLine(MessageType.Standard, "Unknown command. Type /help for help.");
-                    }
-                    else
-                    {
-                        try
-                        {
-                            cmd();
-                        }
-                        catch (ProgramMustExitException)
-                        {
-                            arduinoInterface.Close();
-                            return;
-                        }
-                    }
-                }
-                else
+                while (true)
                 {
-                    if (isBinary)
+                    MyConsole.ForegroundColor = ConsoleColor.Red;
+                    string serialCommand = MyConsole.ReadLine();
+                    MyConsole.ForegroundColor = ConsoleColor.Gray;
+                    if (serialCommand.StartsWith("/"))
                     {
-                        byte[] parsedArray = null;
-                        String binaryString = serialCommand.Replace(" 0x", "").Replace("0x", "");
-                        if (binaryString.Length % 2 != 0)
+                        string[] splitStrings = serialCommand.Substring(1).Split(new char[] { ' ' }, 2);
+                        serialCommand = splitStrings[0];
+                        CurrentCommandArguments = splitStrings.Length > 1 ? splitStrings[1] : null;
+
+                        Action cmd;
+                        if (!ConsoleCommands.TryGetValue(serialCommand, out cmd))
                         {
-                            WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
+                            WriteLine(MessageType.Standard, "Unknown command. Type /help for help.");
                         }
                         else
                         {
-                            parsedArray = new byte[binaryString.Length / 2];
-                            for (int i = 0; i < binaryString.Length; i += 2)
+                            try
                             {
-                                try
-                                {
-                                    parsedArray[i / 2] = byte.Parse(binaryString.Substring(i, 2), NumberStyles.AllowHexSpecifier);
-                                }
-                                catch
-                                {
-                                    WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
-                                    parsedArray = null;
-                                    break;
-                                }
+                                cmd();
                             }
-                        }
-
-                        if (parsedArray != null)
-                        {
-                            WriteLine(MessageType.SerialLog, String.Format("Writing {0} byte(s) of binary data to serial port...", parsedArray.Length));
-                            arduinoInterface.Write(parsedArray, 0, parsedArray.Length);
+                            catch (ProgramMustExitException)
+                            {
+                                arduinoInterface.Close();
+                                return;
+                            }
                         }
                     }
                     else
                     {
-                        WriteLine(MessageType.SerialLog, "Sending message to port...");
-                        arduinoInterface.WriteLine(serialCommand);
+                        if (isBinary)
+                        {
+                            byte[] parsedArray = null;
+                            String binaryString = serialCommand.Replace(" 0x", "").Replace("0x", "");
+                            if (binaryString.Length % 2 != 0)
+                            {
+                                WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
+                            }
+                            else
+                            {
+                                parsedArray = new byte[binaryString.Length / 2];
+                                for (int i = 0; i < binaryString.Length; i += 2)
+                                {
+                                    try
+                                    {
+                                        parsedArray[i / 2] = byte.Parse(binaryString.Substring(i, 2), NumberStyles.AllowHexSpecifier);
+                                    }
+                                    catch
+                                    {
+                                        WriteLine(MessageType.Error, "Error parsing hexadecimal string.");
+                                        parsedArray = null;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (parsedArray != null)
+                            {
+                                WriteLine(MessageType.SerialLog, String.Format("Writing {0} byte(s) of binary data to serial port...", parsedArray.Length));
+                                arduinoInterface.Write(parsedArray, 0, parsedArray.Length);
+                            }
+                        }
+                        else
+                        {
+                            WriteLine(MessageType.SerialLog, "Sending message to port...");
+                            arduinoInterface.WriteLine(serialCommand);
+                        }
                     }
                 }
             }
@@ -274,7 +277,7 @@ namespace AmazingDuinoInterface
             }
 
             MyConsole.WriteLine("Hexadecimal value {0} represents byte with decimal value {1}.", CurrentCommandArguments, value);
-            char charVal = (char)value;
+            char charVal = arduinoInterface.Encoding.GetString(new byte[] { value })[0];
             if (char.IsLetterOrDigit(charVal) || char.IsPunctuation(charVal) || char.IsWhiteSpace(charVal))
             {
                 MyConsole.WriteLine("Hexadecimal value {0} represents character literal '{1}'.", CurrentCommandArguments, charVal);
