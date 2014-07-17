@@ -34,16 +34,19 @@ namespace AmazingDuinoInterface
         {
             initialWidth = Console.WindowWidth;
             initialHeight = Console.WindowHeight;
+            String serialPortName = null;
 
-            MyConsole.WriteLine("Please input serial port name (leave blank for default):");
-            String intName = MyConsole.ReadLine();
-            if (intName.Trim().Length == 0)
+            do
             {
-                intName = "COM4";
-                MyConsole.WriteLine("Defaulting serial port to be {0}", intName);
-            }
+                MyConsole.ForegroundColor = ConsoleColor.Gray;
+                MyConsole.WriteLine("Please input serial port name:");
+                MyConsole.ForegroundColor = ConsoleColor.DarkGray;
+                serialPortName = MyConsole.ReadLine();
+            } while (serialPortName == null || serialPortName.Trim().Length == 0);
 
+            MyConsole.ForegroundColor = ConsoleColor.Gray;
             MyConsole.WriteLine("Please input baud rate (leave blank for default):");
+            MyConsole.ForegroundColor = ConsoleColor.DarkGray;
             int baudRate;
             if (!int.TryParse(MyConsole.ReadLine(), out baudRate))
             {
@@ -51,7 +54,9 @@ namespace AmazingDuinoInterface
                 MyConsole.WriteLine("Defaulting baud rate to be {0}", baudRate);
             }
 
+            MyConsole.ForegroundColor = ConsoleColor.Gray;
             MyConsole.WriteLine("Please input text encoding (leave blank for default):");
+            MyConsole.ForegroundColor = ConsoleColor.DarkGray;
             Encoding encoding = null;
             String encodingName = MyConsole.ReadLine();
             if (encodingName != null && encodingName.Trim().Length > 0)
@@ -82,9 +87,10 @@ namespace AmazingDuinoInterface
                 UseDefaultEncoding(out encoding);
             }
 
+            MyConsole.ForegroundColor = ConsoleColor.Gray;
             try
             {
-                arduinoInterface = new SerialPort(intName, baudRate);
+                arduinoInterface = new SerialPort(serialPortName, baudRate);
                 arduinoInterface.Encoding = encoding == null ? Encoding.ASCII : encoding;
                 WriteLine(MessageType.SerialLog, "Opening serial port for communication...");
                 arduinoInterface.Open();
